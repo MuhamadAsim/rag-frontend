@@ -120,8 +120,23 @@ const Navbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+
+                {/* 🔹 Show admin menu only if role = admin */}
+                {user.role === "admin" && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+
                 <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
+
             </DropdownMenu>
           )}
 

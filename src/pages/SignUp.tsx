@@ -12,47 +12,25 @@ const SignUp = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp } = useAuth(); // ✅ use AuthContext
   const navigate = useNavigate();
 
-
-  
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (password !== confirmPassword) {
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Signup failed");
+    if (password !== confirmPassword) {
+      return;
     }
 
-    const data = await res.json();
+    setIsLoading(true);
+    const success = await signUp(email, password); // ✅ centralized logic
 
-    // optionally store token/user
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    if (success) {
+      navigate("/dashboard");
+    }
 
-    navigate("/dashboard");
-  } catch (err) {
-    console.error(err);
-  } finally {
     setIsLoading(false);
-  }
-};
-
+  };
 
   const features = [
     'Free AI chat with 1,000 tokens',

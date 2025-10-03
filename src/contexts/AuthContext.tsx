@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const data = await response.json();
+      console.log("Signin response data:", data);
 
       if (!response.ok) {
         toast({
@@ -92,7 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // ✅ Save user + token
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("token", data.token);

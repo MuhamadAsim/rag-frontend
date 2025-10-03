@@ -14,10 +14,11 @@ const SignIn = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // 🔹 Redirect if token is already in localStorage
+  // 🔹 Redirect if already logged in
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
       navigate("/dashboard");
     }
   }, [navigate]);
@@ -28,16 +29,14 @@ const SignIn = () => {
 
     const success = await signIn(email, password);
     if (success) {
-      navigate('/dashboard');
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+     
+        navigate("/dashboard");
+      
     }
 
     setIsLoading(false);
   };
-
-  const demoCredentials = [
-    { label: 'Demo User', email: 'user@example.com', password: 'user123' },
-    { label: 'Demo Admin', email: 'admin@example.com', password: 'admin123' }
-  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-surface to-muted px-4">
@@ -118,36 +117,6 @@ const SignIn = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Demo Credentials */}
-        {/* <Card className="gradient-card shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-sm">Demo Credentials</CardTitle>
-            <CardDescription className="text-xs">
-              Use these credentials for testing
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {demoCredentials.map((cred, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">{cred.label}</p>
-                  <p className="text-xs text-muted-foreground">{cred.email}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEmail(cred.email);
-                    setPassword(cred.password);
-                  }}
-                >
-                  Use
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card> */}
       </div>
     </div>
   );
