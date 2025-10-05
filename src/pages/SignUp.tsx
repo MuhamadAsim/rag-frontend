@@ -5,28 +5,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, MessageSquare, Sparkles, CheckCircle } from 'lucide-react';
+import { Loader2, MessageSquare, Sparkles, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth(); // ✅ use AuthContext
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      return;
-    }
+    if (password.length < 6) return;
+    if (password !== confirmPassword) return;
 
     setIsLoading(true);
-    const success = await signUp(email, password); // ✅ centralized logic
+    const success = await signUp(email, password);
 
     if (success) {
-      navigate("/dashboard");
+      navigate("/check-email");
     }
 
     setIsLoading(false);
@@ -86,6 +87,7 @@ const SignUp = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -97,36 +99,79 @@ const SignUp = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+
+              {/* Password */}
+              <div className="space-y-2 relative">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {password.length > 0 && password.length < 6 && (
+                  <p className="text-sm text-destructive">Password must be at least 6 characters</p>
+                )}
               </div>
-              <div className="space-y-2">
+
+              {/* Confirm Password */}
+              <div className="space-y-2 relative">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
                 {password !== confirmPassword && confirmPassword && (
                   <p className="text-sm text-destructive">Passwords don't match</p>
                 )}
               </div>
-              <Button 
-                type="submit" 
+
+              {/* Submit */}
+              <Button
+                type="submit"
                 variant="gradient"
                 className="w-full"
-                disabled={isLoading || password !== confirmPassword}
+                disabled={
+                  isLoading ||
+                  password !== confirmPassword ||
+                  password.length < 6
+                }
               >
                 {isLoading ? (
                   <>
@@ -138,11 +183,14 @@ const SignUp = () => {
                 )}
               </Button>
             </form>
-            
+
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link to="/signin" className="text-primary hover:text-primary-hover transition-smooth font-medium">
+                <Link
+                  to="/signin"
+                  className="text-primary hover:text-primary-hover transition-smooth font-medium"
+                >
                   Sign in
                 </Link>
               </p>

@@ -13,16 +13,17 @@ import {
   MessageSquare,
   Sparkles,
   User,
-  Settings,
-  LogOut,
-  Moon,
   Sun,
+  Moon,
   Monitor,
   Crown,
   Coins,
-  Shield
+  Shield,
+  FileText,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -36,37 +37,58 @@ const Navbar = () => {
 
   const getPlanIcon = (plan: string) => {
     switch (plan) {
-      case 'premium': return <Crown className="h-3 w-3 text-accent" />;
-      case 'standard': return <Sparkles className="h-3 w-3 text-primary" />;
-      default: return <Coins className="h-3 w-3 text-muted-foreground" />;
+      case 'premium':
+        return <Crown className="h-3 w-3 text-accent" />;
+      case 'standard':
+        return <Sparkles className="h-3 w-3 text-primary" />;
+      default:
+        return <Coins className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
   const getPlanColor = (plan: string) => {
     switch (plan) {
-      case 'premium': return 'text-accent';
-      case 'standard': return 'text-primary';
-      default: return 'text-muted-foreground';
+      case 'premium':
+        return 'text-accent';
+      case 'standard':
+        return 'text-primary';
+      default:
+        return 'text-muted-foreground';
     }
   };
+
+  // 🔹 Client fetches admin files with React Query
+  const { data: files = [], isLoading: filesLoading } = useQuery({
+    queryKey: ['client-files'],
+    queryFn: async () => {
+      const res = await axios.get('http://localhost:5000/api/admin/', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return res.data || [];
+    },
+    enabled: !!user && user.role !== 'admin', // only run for clients
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
+    staleTime: Infinity,
+  });
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-6">
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center space-x-2 transition-smooth hover:scale-105">
+        <Link
+          to="/dashboard"
+          className="flex items-center space-x-2 transition-smooth hover:scale-105"
+        >
           <div className="relative">
             <MessageSquare className="h-8 w-8 text-primary" />
             <Sparkles className="h-4 w-4 text-accent absolute -top-1 -right-1" />
           </div>
-          <span className="text-xl font-bold">
-            ChatAI
-          </span>
+          <span className="text-xl font-bold">ChatAI</span>
         </Link>
 
-        {/* Navigation Items */}
         <div className="flex items-center space-x-4">
-
           {/* Theme Toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -78,16 +100,13 @@ const Navbar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="mr-2 h-4 w-4" />
-                Light
+                <Sun className="mr-2 h-4 w-4" /> Light
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="mr-2 h-4 w-4" />
-                Dark
+                <Moon className="mr-2 h-4 w-4" /> Dark
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme('system')}>
-                <Monitor className="mr-2 h-4 w-4" />
-                System
+                <Monitor className="mr-2 h-4 w-4" /> System
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -108,11 +127,7 @@ const Navbar = () => {
                     {user.plan && (
                       <div className="flex items-center space-x-1">
                         {getPlanIcon(user.plan)}
-                        <p
-                          className={`text-xs leading-none capitalize ${getPlanColor(
-                            user.plan
-                          )}`}
-                        >
+                        <p className={`text-xs leading-none capitalize ${getPlanColor(user.plan)}`}>
                           {user.plan} Plan
                         </p>
                       </div>
@@ -121,13 +136,12 @@ const Navbar = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* 🔹 Show admin menu only if role = admin */}
-                {user.role === "admin" && (
+                {/* Admin only menu */}
+                {user.role === 'admin' && (
                   <>
                     <DropdownMenuItem asChild>
                       <Link to="/admin">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Panel
+                        <Shield className="mr-2 h-4 w-4" /> Admin Panel
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -136,7 +150,39 @@ const Navbar = () => {
 
                 <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
+          {/* Client Files Menu */}
+          {/* Client Files Menu */}
+          {user && user.role !== 'admin' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <FileText className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64" align="end">
+                <DropdownMenuLabel>Available Files</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {filesLoading ? (
+                  <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+                ) : files.length > 0 ? (
+                  files.map((file: any) => (
+                    <DropdownMenuItem key={file._id} asChild>
+                      {/* ✅ Call backend download route instead of direct Cloudinary link */}
+                      <a
+                        href={`http://localhost:5000/api/admin/${file._id}/download`}
+                        download
+                      >
+                        {file.filename}
+                      </a>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>No files available</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
             </DropdownMenu>
           )}
 

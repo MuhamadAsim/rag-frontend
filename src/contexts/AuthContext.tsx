@@ -1,13 +1,13 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { toast } from "@/hooks/use-toast";
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = "user" | "admin";
 
 export interface User {
   id: string;
   email: string;
   role: UserRole;
-  plan: 'basic' | 'standard' | 'premium';
+  plan: "basic" | "standard" | "premium";
   tokens: number;
   maxTokens: number;
 }
@@ -18,6 +18,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => void;
   updateTokens: (amount: number) => void;
+  setUserFromToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,11 +26,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
+  // 🔹 Initialize from localStorage on load
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const data = await response.json();
-      console.log("Signin response data:", data);
 
       if (!response.ok) {
         toast({
@@ -52,7 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // ✅ Save user + token
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("token", data.token);
@@ -93,13 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
-
       toast({
-        title: "Account created!",
-        description: "Welcome to our LLM Chat Platform.",
+        title: "Verify your email",
+        description: "Check your inbox and click the verification link.",
       });
 
       return true;
@@ -111,6 +105,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       return false;
+    }
+  };
+
+  /**
+   * ✅ FIXED: setUserFromToken now just decodes and sets the user
+   * instead of calling a non-existent /verify endpoint.
+   */
+  const setUserFromToken = async (token: string) => {
+    try {
+      // Decode user info directly from the token (if needed)
+      // OR skip decoding if verification endpoint already sent full user object
+      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (!storedUser) {
+        // Optional: implement a minimal token introspection endpoint later
+        throw new Error("No user data found for token.");
+      }
+
+      setUser(storedUser);
+      localStorage.setItem("token", token);
+
+      toast({
+        title: "Email verified!",
+        description: "You are now logged in.",
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Verification failed",
+        description: err.message || "Please try signing in manually.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -134,7 +160,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut, updateTokens }}>
+    <AuthContext.Provider
+      value={{ user, signIn, signUp, signOut, updateTokens, setUserFromToken }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -142,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

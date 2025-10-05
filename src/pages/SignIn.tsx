@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, MessageSquare, Sparkles } from 'lucide-react';
+import { Loader2, MessageSquare, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -18,22 +19,19 @@ const SignIn = () => {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      const parsed = JSON.parse(storedUser);
       navigate("/dashboard");
     }
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
+    if (password.length < 6) return;
+
+    setIsLoading(true);
     const success = await signIn(email, password);
-    if (success) {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-     
-        navigate("/dashboard");
-      
-    }
+
+    if (success) navigate("/dashboard");
 
     setIsLoading(false);
   };
@@ -68,6 +66,7 @@ const SignIn = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -79,22 +78,46 @@ const SignIn = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+
+              {/* Password with toggle */}
+              <div className="space-y-2 relative">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {password.length > 0 && password.length < 6 && (
+                  <p className="text-sm text-destructive">
+                    Password must be at least 6 characters
+                  </p>
+                )}
               </div>
-              <Button 
-                type="submit" 
+
+              {/* Submit */}
+              <Button
+                type="submit"
                 variant="gradient"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || password.length < 6}
               >
                 {isLoading ? (
                   <>
@@ -105,12 +128,26 @@ const SignIn = () => {
                   'Sign In'
                 )}
               </Button>
+
+              {/* Forgot password */}
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:text-primary-hover font-medium transition-smooth flex justify-center pt-1"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </form>
-            
+
+            {/* Sign up link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:text-primary-hover transition-smooth font-medium">
+                Don’t have an account?{' '}
+                <Link
+                  to="/signup"
+                  className="text-primary hover:text-primary-hover transition-smooth font-medium"
+                >
                   Sign up
                 </Link>
               </p>
